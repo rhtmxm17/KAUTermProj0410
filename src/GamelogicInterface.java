@@ -28,30 +28,26 @@ class cardInfo{
 
 public interface GamelogicInterface {
 	
-	/*
+	/**
 	 * 게임을 준비하는 함수
 	 * 	이미 게임이 진행중이라면 실패해야 함
 	 * 
-	 * int pairNum
-	 * 	같은 문양의 카드를 몇 쌍 배치할 것인지 지정
-	 * 
-	 * int kindOfPattern
+	 * @param pairNum
+	 *  같은 문양의 카드를 몇 쌍 배치할 것인지 지정
+	 * @param kindOfPattern
 	 *  문양을 몇 종류 사용할 것인지 지정
-	 * 
 	 */
 	public int setupGame(int pairNum, int kindOfPattern);
 	
-	/*
+	/**
 	 * 플레이어의 카드 선택 입력을 지정하는 함수
 	 * 
-	 * int playerNumber
-	 * 	어느 플레이어의 입력인지를 지정
+	 * @param playerNumber
+	 * 	어느 플레이어의 입력인지를 지정 /
 	 * 	호스트는 인자로 0을, 참여자는 0 이외(default: 1)을 사용
-	 * 	
-	 * int selectedCardIndex
-	 * 	어느 카드를 선택하는지 지정
+	 * @param selectedCardIndex
+	 * 	어느 카드를 선택하는지 지정 /
 	 *  기본적으로 0 ~ (최대 카드 수 -1)의 입력을 허용
-	 * 
 	 * */
 	public int playerCardSelect(int playerNumber, int selectedCardIndex);
 	
