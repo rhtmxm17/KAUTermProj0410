@@ -1,14 +1,21 @@
 
 import java.util.Scanner;
+import javax.swing.JFrame;
 
 public class PlayerTester implements GamelogicInterface {
 
 	public static void main(String[] args) {
 		PlayerTester tester = new PlayerTester();
-		PlayerInterface player = null;	// TODO : 구현한 플레이어 UI를 생성해서 넣기
-		player.setGamelogic(tester);
-		int input;
+		PlayerUI player = new PlayerUI();	// TODO : 추가로 필요한 초기화 처리가 있다면 넣기
+		player.setGamelogic(tester, 0);
 		
+		JFrame frame = new JFrame ("Cardgame Test"); 
+		frame.setDefaultCloseOperation (JFrame.EXIT_ON_CLOSE); 
+		frame.getContentPane().add(player); 
+		frame.pack(); 
+		frame.setVisible(true);
+		
+		int input;
 		Scanner scan = new Scanner(System.in);
 		boolean end = false;
 		while(false == end)
