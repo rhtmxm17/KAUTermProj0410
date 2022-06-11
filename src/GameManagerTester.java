@@ -1,7 +1,6 @@
 import java.util.Scanner;
 
 class DummyPlayer implements PlayerInterface{
-	GamelogicInterface game = null;
 	
 	@Override
 	public void setCardInfo(int cardNum, int[] arrCardInfo) {
@@ -9,8 +8,7 @@ class DummyPlayer implements PlayerInterface{
 	}
 
 	@Override
-	public void setGamelogic(GamelogicInterface game) {
-		this.game = game;
+	public void setGamelogic(GamelogicInterface game, int playerNumber) {
 	}
 	
 }

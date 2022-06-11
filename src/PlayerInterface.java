@@ -2,10 +2,10 @@
 public interface PlayerInterface {
 	
 	/**
-	 *  사용할 게임로직 인터페이스를 입력
+	 *  사용할 게임로직 인터페이스와 플레이어 번호를 입력
 	 *  
 	 * */
-	public void setGamelogic(GamelogicInterface game);
+	public void setGamelogic(GamelogicInterface game, int playerNumber);
 	
 	/**
 	 * 게임로직 클래스쪽에서 이 함수를 호출해서 카드 정보를 갱신함

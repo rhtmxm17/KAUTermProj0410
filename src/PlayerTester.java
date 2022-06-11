@@ -42,6 +42,8 @@ public class PlayerTester implements GamelogicInterface {
 	@Override
 	public int playerCardSelect(int playerNumber, int selectedCardIndex) {
 		// TODO Auto-generated method stub
+		
+		
 		return 0;
 	}
 
