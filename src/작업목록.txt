@@ -1,0 +1,14 @@
+1.게임로직 - 신진혁
+ GameManager.java를 완성
+ GameManagerTester.java를 실행해서 동작 확인
+
+2.게임UI - 이유경
+ PlayerUI.java를 완성
+ PlayerTester.java를 실행해서 동작 확인
+
+3.채팅UI - 김정민
+ ChattingUI.java를 완성
+ ChattingTester.java를 실행해서 동작 확인
+
+4.네트워킹 - 최지성
+ NetworkingManager.java를 작성
