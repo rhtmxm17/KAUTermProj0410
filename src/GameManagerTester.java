@@ -5,7 +5,9 @@ class DummyPlayer implements PlayerInterface{
 	
 	@Override
 	public void setCardInfo(int cardNum, int[] arrCardInfo) {
-		System.out.println(arrCardInfo);
+		for(int i : arrCardInfo)
+			System.out.print(i + " ");
+		System.out.println();
 	}
 
 	@Override

@@ -12,3 +12,5 @@
 
 4.네트워킹 - 최지성
  NetworkingManager.java를 작성
+ 
+ 06.14 논의결과 카드 장수는 16장, 패턴은 8종(PatternNumber 0~7)로 고정
