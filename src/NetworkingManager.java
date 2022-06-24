@@ -60,6 +60,7 @@ public class NetworkingManager extends Thread implements GamelogicInterface {
 	private ChattingUI myChatting = null;
 	private boolean isMaster;
 	private GameManager game = null;	//호스트만 게임로직을 갖는다
+	private PlayerInterface GuestUI = null; //게스트만 UI정보를 갖는다
 	
 	/**
 	 * 마스터라면 다른 모든 플레이어가, 게스트라면 마스터가 들어온다
@@ -160,12 +161,14 @@ public class NetworkingManager extends Thread implements GamelogicInterface {
 						}
 					}
 					break;
-				case MessageProtocol.MESSAGETYPE_CARDINFO:
+				case MessageProtocol.MESSAGETYPE_CARDINFO:	// 호스트가 보내온 카드 정보
 					if(isMaster)
 					{
 						System.out.println("에러: 게스트가 카드 정보를 보냄");
 						new Exception().printStackTrace();
 					}
+					int[] cardInfo = message.getData_Int();
+					GuestUI.setCardInfo(cardInfo.length, cardInfo);
 					break;
 				case MessageProtocol.MESSAGETYPE_CARDSELECT:	// 게스트의 카드 선택 동작
 					game.playerCardSelect(playerIndex, message.data[0]);
@@ -193,6 +196,19 @@ public class NetworkingManager extends Thread implements GamelogicInterface {
 	}
 	
 	/**
+	 * 게스트용 초기화 함수
+	 * @param playerUI 플레이어UI
+	 */
+	public void setPlayerUIforGuest(PlayerInterface playerUI) {
+		if(this.isMaster)
+		{
+			new Exception().printStackTrace();
+			return;
+		}
+		this.GuestUI = playerUI;
+	}
+	
+	/**
 	 * 마스터에서만 실행 가능, 접속 스레드
 	 * @param portNum 사용할 포트 번호
 	 * @return 접속 포트 개방 성공 여부
@@ -206,6 +222,9 @@ public class NetworkingManager extends Thread implements GamelogicInterface {
 		} catch (IOException e) {
 			return false;
 		}
+		
+		System.out.println("InetAddress:" + socket.getInetAddress());
+		System.out.println("LocalPort:" + socket.getLocalPort());
 		this.incoming = true;
 		this.start();
 		return true;

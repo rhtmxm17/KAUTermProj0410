@@ -4,14 +4,14 @@ import javax.swing.JFrame;
 
 public class ChatteingTester extends NetworkingManager {
 
-	public ChatteingTester(boolean isMaster) {
-		super(isMaster);
+	public ChatteingTester(GameManager game) {
+		super(game);
 		// TODO Auto-generated constructor stub
 	}
 
 	public static void main(String[] args) {
 		// TODO Auto-generated method stub
-		ChatteingTester dummyNetwork = new ChatteingTester(false);
+		ChatteingTester dummyNetwork = new ChatteingTester(null);
 		ChattingUI chat = new ChattingUI();
 		chat.setNetworking(dummyNetwork);
 		dummyNetwork.setChattingUI(chat);
