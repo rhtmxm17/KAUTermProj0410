@@ -46,6 +46,13 @@ class MessageProtocol implements Serializable {
 		return out;
 	}
 
+	public static MessageProtocol InitMessage(String playerName) {
+		MessageProtocol out = new MessageProtocol();
+		out.messageType = MESSAGETYPE_INIT;
+		out.data = playerName.getBytes();
+		return out;
+	}
+	
 	public int[] getData_Int() {
 		int[] out = new int[data.length];
 		for(int i = 0; i < data.length; ++i)
@@ -158,6 +165,14 @@ public class NetworkingManager extends Thread implements GamelogicInterface {
 
 
 				switch(message.messageType) {
+				case MessageProtocol.MESSAGETYPE_INIT:
+					String name = new String(message.data);
+					otherPlayers.add(this);
+					int playerNum = game.addPlayer(this, name);
+					this.setPlayerIndex(playerNum);
+					//System.out.println("새로운 참여자: " + playerNum);
+					//systemMessageAll("새로운 참여자" + playerNum + ": " + name);
+					break;
 				case MessageProtocol.MESSAGETYPE_CHATTING:	// 채팅 수신
 					myChatting.receiveMessage(message.getData_String());
 					if(isMaster)	// 호스트라면 다른 게스트에게 채팅 공유
@@ -258,11 +273,7 @@ public class NetworkingManager extends Thread implements GamelogicInterface {
 
 			NetworkPlayer newPlayer = new NetworkPlayer(incoming, otherPlayers.size());
 
-			this.otherPlayers.add(newPlayer);
-			int playerNum = game.addPlayer(newPlayer);
-			newPlayer.setPlayerIndex(playerNum);
-			System.out.println("새로운 참여자: " + playerNum);
-			systemMessageAll("새로운 참여자: " + playerNum);
+			
 		}
 	}
 	
@@ -287,6 +298,11 @@ public class NetworkingManager extends Thread implements GamelogicInterface {
 		this.otherPlayers.add(new NetworkPlayer(host, 0));
 		
 		return true;
+	}
+	
+	public void initMessage(String name) {
+		otherPlayers.get(0).sendMessage(MessageProtocol.InitMessage(name));
+		
 	}
 	
 	/**

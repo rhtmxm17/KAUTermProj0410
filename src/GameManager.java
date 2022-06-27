@@ -1,10 +1,28 @@
+import java.io.*;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Random;
+
+class WinRecord implements Serializable{
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 2L;
+	String Id;
+	int vic;
+	
+	public WinRecord() {}
+	public WinRecord(String Id, int vic)
+	{
+		this.Id = Id; 
+		this.vic = vic;
+	}
+}
 
 public class GameManager implements GamelogicInterface {
 	ArrayList<PlayerInterface> players;	// 플레이어 객체 목록
+	ArrayList<String> names;
 	ArrayList<cardInfo> cards = null;	// 카드 정보
+	ArrayList<WinRecord> records = null;
 	int[] score;						// 플레이어 점수 목록 
 	int kindOfPattern = 0;				// 패턴 종류
 	int cardNum = 0;					// 카드 갯수
@@ -19,11 +37,66 @@ public class GameManager implements GamelogicInterface {
 	// 플레이어 받을 준비
 	public GameManager() {
 		players = new ArrayList<PlayerInterface>();
+		names = new ArrayList<String>();
+		records = new ArrayList<WinRecord>();
+		
+		/*
+		// 우승 기록 더미데이터 생성
+		try {
+			ObjectOutputStream oout = new ObjectOutputStream(new FileOutputStream("stfile"));
+			oout.writeInt(3);
+			for (int i =0; i <3; i++)
+			{
+				oout.writeObject(new WinRecord("Dummy" + i, i + 1));	
+			}
+			oout.close();
+		} catch (IOException e1) {
+			e1.printStackTrace();
+		}
+		*/
+		
+		try {
+			ObjectInputStream inp = new ObjectInputStream(new FileInputStream("stfile"));
+			int num = inp.readInt();
+			if(num == 0)
+			{
+				ObjectOutputStream of = new ObjectOutputStream(new FileOutputStream("stfile"));
+				of.writeInt(0);
+				of.close();
+			}else {
+				for (int i = 0; i<num; i++) {
+					WinRecord s = (WinRecord)inp.readObject();
+					records.add(s);
+					System.out.println(s.Id + "/" + s.vic);
+				}
+				
+				inp.close();	
+			}
+		}
+		catch (Exception e) {
+			e.printStackTrace();
+		}
 	}
 	
 	// 플레이어 추가 후 번호를 반환
-	public int addPlayer(PlayerInterface player) {
+	public int addPlayer(PlayerInterface player, String Id) {
+		
 		players.add(player);
+		names.add(Id);
+		
+		if(null != network)
+			network.systemMessageAll("새로운 참여자" + players.indexOf(player) + ": " + Id);
+		
+		for (WinRecord rec : records) {
+			if(0 == rec.Id.compareTo(Id))
+			{
+				String joinMsg = Id +"의 우승 횟수: " + rec.vic;
+				System.out.println(joinMsg);
+				if(null != network)
+					network.systemMessageAll(joinMsg);
+			}
+		}
+
 		return players.indexOf(player);
 		// 게임 실행 여부에 따라 추가 입장을 막는다.
 	}
@@ -132,6 +205,67 @@ public class GameManager implements GamelogicInterface {
 			System.out.println(victoyMessage);
 		else
 			network.systemMessageAll(victoyMessage);
+		
+		
+		// 기존의 결과 수정하기
+		for(Integer winnerIndex : player)
+		{
+			boolean done = false;
+			for (int i = 0; i < records.size(); i++) {
+				if(0 == records.get(i).Id.compareTo(names.get(winnerIndex)))
+				{
+					int winCnt = records.get(i).vic++;
+					network.systemMessageAll("우승 횟수: " + winCnt);
+					done = true;
+				}
+			}
+			
+			// 기존 우승자 목록에 없을 경우
+			if(false == done)
+			{
+				records.add(new WinRecord(names.get(winnerIndex), 1));
+			}
+		}
+		
+		try {
+			// 수정된 결과 저장하기
+			FileOutputStream f = new FileOutputStream("stfile");
+			ObjectOutputStream of = new ObjectOutputStream(f);
+			of.writeInt(records.size());
+			for (int i =0; i <records.size(); i++)
+			{
+				of.writeObject(records.get(i));	
+			}
+			of.close();
+			
+			// 1,2,3 등 출력
+			int rankMax = 3;
+			if(records.size() < 3)
+				rankMax = records.size();
+			for(int i =0; i<rankMax;i++)
+			{
+				WinRecord a = records.get(0);
+				int loc=0;
+				for (int j =0; j< records.size();j++)
+				{
+					if(a.vic < records.get(j).vic)
+					{
+						a = records.get(j);
+						loc = j;
+					}
+				}
+				
+				String rankMsg = "누적 우승 " + (i+1) + "위" + records.get(loc).Id+" : "+records.get(loc).vic;
+				if(null == network)
+					System.out.println(rankMsg);
+				else
+					network.systemMessageAll(rankMsg);
+				
+				records.remove(loc);
+				//num--;
+			}
+		}
+		catch (Exception e) {}
 	}
 
 	// 현재 턴플레이어 출력

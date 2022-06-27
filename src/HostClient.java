@@ -10,11 +10,15 @@ public class HostClient {
 	public static final int PORT_TRY_MAX = 10;
 	
 	public static void main(String[] args) {
+
+		Scanner scan = new Scanner(System.in);
+		System.out.print("이름을 입력: ");
+		String name = scan.nextLine();
 		
 		GameManager game = new GameManager();
 		PlayerUI ui = new PlayerUI();
 		ui.setGamelogic(game, 0);
-		game.addPlayer(ui);
+		game.addPlayer(ui, name);
 		
 		NetworkingManager network = new NetworkingManager(game);
 		
@@ -34,6 +38,7 @@ public class HostClient {
 		if(!result)
 		{
 			System.out.println("서버 실행 실패");
+			scan.close();
 			return;
 		}
 		
@@ -50,7 +55,6 @@ public class HostClient {
 		frame.pack(); 
 		frame.setVisible(true);
 		
-		Scanner scan = new Scanner(System.in);
 		
 		System.out.println("아무 키나 눌러서 참가자 참여 완료");
 		scan.nextLine();
@@ -63,3 +67,16 @@ public class HostClient {
 	}
 
 }
+
+/*
+ * save
+ * 연결시 본인의 '이름' 등록
+ * 서버에서 우승 기록 파일로 저장
+ * 참여 메시지 대신 해당 참여자의 우승 기록 출력
+ * 게임 종료시 전체 참여자 top3
+ * 
+ * 
+ * 
+ * 
+ */
+

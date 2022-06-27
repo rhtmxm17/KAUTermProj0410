@@ -15,9 +15,8 @@ public class GuestClient {
 		network.setChattingUI(chat);
 
 		Scanner scan = new Scanner(System.in);
-		System.out.println("hostAddress: ");
+		System.out.print("hostAddress: ");
 		String hostAddress = scan.nextLine();
-		scan.close();
 		boolean result = false;
 		for(int i = 0; i < HostClient.PORT_TRY_MAX; ++i)
 		{
@@ -26,6 +25,19 @@ public class GuestClient {
 			if(result)
 				break;
 		}
+
+		if(false == result)
+		{
+			System.out.println("연결 실패");
+			scan.close();
+			return;
+		}
+
+		System.out.print("your name: ");
+		String name = scan.nextLine();
+		scan.close();
+		
+		network.initMessage(name);
 		
 		
 		JFrame frame = new JFrame ("Cardgame Player"); 
