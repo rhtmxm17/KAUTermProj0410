@@ -1,52 +1,256 @@
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Random;
 
 public class GameManager implements GamelogicInterface {
 	ArrayList<PlayerInterface> players;	// 플레이어 객체 목록
 	ArrayList<cardInfo> cards = null;	// 카드 정보
+	int[] score;						// 플레이어 점수 목록 
 	int kindOfPattern = 0;				// 패턴 종류
 	int cardNum = 0;					// 카드 갯수
+	int turnplayer = 0;					// 현재 턴 플레이어
+	int play_count = 0;					// 턴 플레이어의 플레이 횟수
+	int[] pick = new int[2];			// 턴 플레이어가 뽑은 카드
+	boolean game_state = true;			// 게임 진행 상태
 	
+	NetworkingManager network = null;	// 시스템 메시지용
+	Thread notify = null;
+	
+	// 플레이어 받을 준비
 	public GameManager() {
-		players = new ArrayList<PlayerInterface>(2);
+		players = new ArrayList<PlayerInterface>();
 	}
 	
 	// 플레이어 추가 후 번호를 반환
 	public int addPlayer(PlayerInterface player) {
 		players.add(player);
 		return players.indexOf(player);
+		// 게임 실행 여부에 따라 추가 입장을 막는다.
 	}
 	
 	public boolean removePlayer(PlayerInterface player) {
 		return players.remove(player);
 	}
 	
-	@Override
-	public int setupGame(int pairNum, int kindOfPattern) {
+	public void setNetwork(NetworkingManager network) {
+		this.network = network;
+	}
+	
+	// 게임 셋업
+	public int setupGame(int kindOfPattern) {
+		// 게임 진행 상태
+		this.game_state = true;
+		// 카드 패턴 수
 		this.kindOfPattern = kindOfPattern;
-		this.cardNum = pairNum * 2;
+		// 카드 수
+		this.cardNum = kindOfPattern * 2;
+		// 점수 목록 초기화
+		score = new int[players.size()];
+		// 카드 수만큼 카드 생성
 		this.cards = new ArrayList<cardInfo>(cardNum);
-		
-		// TODO 게임 준비
-		
+
+		// 카드 랜덤으로 중복없이 설정
+		for (int i = 0; i < kindOfPattern; i++) {
+			cards.add(new cardInfo(i));
+			cards.add(new cardInfo(i));
+		}
+		Collections.shuffle(cards);
+
+		// 카드 내부(확인용)
+		for (int i = 0; i < cards.size(); i++) {
+			System.out.print(cards.get(i).patternNumber + " ");
+		}
+		System.out.println("");
+
 		return 0;
 	}
+	
+	// 게임 진행 상태 체크
+	public void gamecheck()
+	{
+		game_state = false;
+		// 카드 상태 확인
+		for(int i =0;i<cards.size();i++)
+		{	// 카드가 아직 안뒤집힌게 있다면 진행 상태를 true로 변경
+			if(cards.get(i).face == Face.BACK)
+			{
+				game_state = true;
+				break;
+			}
+		}
+	}
 
-	@Override
+	// score 배열 반환
+	public int[] all_score() 
+	{
+		return this.score;
+	}
+	
+	// score 비교해서 우승자 고르기(무승부도 존재)
+	public void victory()
+	{
+		ArrayList<Integer> player = new ArrayList<Integer>();
+		int temp = score[0];
+		int num = 0;
+		// 제일 점수가 높은 사람 찾기
+		for(int i =0; i<players.size();i++)
+		{
+			if(temp < score[i])
+			{
+				temp = score[i];
+				num = i;
+			}
+		}
+		player.add(num);
+		
+		// 동점자 있는지 확인하기
+		for(int i =0; i<players.size();i++)
+		{
+			if((score[player.get(0)] == score[i]) && (player.get(0) != i))
+			{
+				player.add(i);
+			}
+		}
+		System.out.println(player.size());
+		
+		String victoyMessage = "우승자는 ";
+		// 우승자가 한 명일 경우
+		if(player.size() == 1)
+		{
+			victoyMessage += (player + "번 플레이어입니다.");
+		}
+		else // 우승자가 여러 명일 경우
+		{
+			for(int i =0; i<player.size();i++)
+			{
+				victoyMessage += (player.get(i)+ "번 ");
+			}
+			victoyMessage += "입니다.";
+		}
+		
+		if(null == network)
+			System.out.println(victoyMessage);
+		else
+			network.systemMessageAll(victoyMessage);
+	}
+
+	// 현재 턴플레이어 출력
+	public int nowturnplayer() 
+	{
+		return turnplayer;
+	}
+
 	public int playerCardSelect(int playerNumber, int selectedCardIndex) {
-		
-		// TODO playerNumber번호의 플레이어가 selectedCardIndex카드 선택시 동작
-		//
-		// 짝을 맞춰서 카드 제거시 실제 카드 객체를 삭제하지 말고
-		// 상태를 Face.REMOVED 로 바꿀것
-		
-		
-		
-		
-		notifyCardInfoToPlayers();	// 갱신된 정보를 통지
+		if(game_state)
+		{
+			if (selectedCardIndex >= cardNum) // 없는 카드 번호를 입력 시
+			{
+				String notice = "주어진 카드 번호를 입력하세요.";
+				if(null == network)
+					System.out.println(notice);
+				else
+					network.systemMessageTo(playerNumber, notice);
+				return 1;
+			} else if (cards.get(selectedCardIndex).face == Face.REMOVED) // 제거된 카드를 입력 시
+			{
+				String notice = "이미 맞춘 카드입니다.";
+				if(null == network)
+					System.out.println(notice);
+				else
+					network.systemMessageTo(playerNumber, notice);
+				return 1;
+			} else if (turnplayer != playerNumber) { // 턴플레이어와 입력된 플레이 넘버가 다를 경우 작동x
+				String notice = "현재 턴플레이어는 " + turnplayer + "입니다.";
+				if(null == network)
+					System.out.println(notice);
+				else
+					network.systemMessageTo(playerNumber, notice);
+				return 1;
+			} else {
+				if (play_count == 0) // 턴플레이어의 플레이 횟수가 1회일 때
+				{
+					cards.get(selectedCardIndex).face = Face.FRONT;
+					pick[play_count] = selectedCardIndex;
+					play_count++;
+					notifyCardInfoToPlayers();
+				} else if (play_count == 1) { // 턴플레이어의 플레이 횟수가 2회일 때
+					if (pick[0] == selectedCardIndex) // 1회에서 고른 카드와 같은 카드를 선택 시
+					{
+						String notice = "같은 카드를 선택했습니다.";
+						if(null == network)
+							System.out.println(notice);
+						else
+							network.systemMessageTo(playerNumber, notice);
+						return 1;
+					} else // 제대로 입력 시
+					{
+						cards.get(selectedCardIndex).face = Face.FRONT;
+						notifyCardInfoToPlayers();
+						pick[play_count] = selectedCardIndex;
+						if (cards.get(pick[0]).getNumber() == cards.get(pick[1]).getNumber()) { // 카드를 맞췄을 경우
+							cards.get(pick[0]).face = Face.REMOVED;
+							cards.get(pick[1]).face = Face.REMOVED;
+							System.out.println("카드를 맞추셨습니다.");
+							
+							score[turnplayer]++;
+							
+							String notice = "플레이어 " + turnplayer + "의 점수는 :" + score[turnplayer];
+							if(null == network)
+								System.out.println(notice);
+							else
+								network.systemMessageAll(notice);
+							
+							gamecheck(); // 카드가 다 뒤집히면 게임을 종료해야하므로
+							if(!game_state)
+							{
+								victory(); // 우승자 확인
+							}
+							
+							turnplayer--;
+							play_count = 0;
+						} else { // 카드를 틀렸을 경우
+							cards.get(pick[0]).face = Face.BACK;
+							cards.get(pick[1]).face = Face.BACK;
+						}
+						notify = new reserveNotify(1000);
+						notify.start();
+
+						turnplayer++;
+						play_count = 0;
+
+						// 턴플레이어가 총 플레이어 수와 같을때 첫 번째 플레이어 순서로 돌아감
+						// 총 플레이어수는 1부터 시작하고, turnplayer는 0부터 시작한다.
+						if (turnplayer == players.size()) {
+							turnplayer = 0;
+						}
+					}
+				}
+			}
+		}else
+		{
+			System.out.println("게임을 먼저 실행 하세요");
+		}
 		return 0;
 	}
 
-	private void notifyCardInfoToPlayers() {
+	class reserveNotify extends Thread {
+		int time;
+		reserveNotify(int time){
+			this.time = time;
+		}
+		
+		@Override
+		public void run() {
+			try {
+				sleep(time);
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
+			notifyCardInfoToPlayers();
+		}
+	}
+	
+	void notifyCardInfoToPlayers() {
 		int[] openedCardInfo = new int[cardNum];
 		for(int i = 0; i < cards.size(); ++i)
 		{

@@ -19,10 +19,22 @@ class cardInfo{
 	}
 	
 	public int getFacedInfo() {
-		if(Face.FRONT == this.face)
+		switch(this.face) {
+		case FRONT:
 			return this.patternNumber;
-		else
+		case BACK:
 			return PATTERNNUMBER_BACK;
+		case REMOVED:
+			return PATTERNNUMBER_REMOVED;
+		default:
+			System.out.println("카드면 설정 에러");
+			new Exception().printStackTrace();
+			return PATTERNNUMBER_UNDEFINED;
+		}
+	}
+	
+	public int getNumber() {
+		return patternNumber;
 	}
 }
 
@@ -37,7 +49,7 @@ public interface GamelogicInterface {
 	 * @param kindOfPattern
 	 *  문양을 몇 종류 사용할 것인지 지정
 	 */
-	public int setupGame(int pairNum, int kindOfPattern);
+	public int setupGame(int pairNum);
 	
 	/**
 	 * 플레이어의 카드 선택 입력을 지정하는 함수

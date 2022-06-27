@@ -27,8 +27,10 @@ class MessageProtocol implements Serializable {
 	 */
 	public MessageProtocol(int[] arrCardInfo) {
 		this.messageType = MESSAGETYPE_CARDINFO;
+		this.data = new byte[arrCardInfo.length];
 		for(int i = 0; i < arrCardInfo.length; ++i)
 			data[i] = (byte)arrCardInfo[i];
+
 	}
 	
 	public MessageProtocol(String ChattingMessage) {
@@ -52,7 +54,7 @@ class MessageProtocol implements Serializable {
 	}
 	
 	public String getData_String() {
-		return data.toString();
+		return new String(data);
 	}
 }
 
@@ -67,7 +69,7 @@ public class NetworkingManager extends Thread implements GamelogicInterface {
 	 */
 	private ArrayList<NetworkPlayer> otherPlayers = new ArrayList<NetworkPlayer>();
 	
-	private ServerSocket socket = null;
+	private ServerSocket serverSocket = null;
 	private boolean incoming = false;
 	
 	/**
@@ -91,12 +93,14 @@ public class NetworkingManager extends Thread implements GamelogicInterface {
 			this.networkIndex = networkIndex;
 			
 			try {
-				inputStream = new ObjectInputStream(socket.getInputStream());
 				outputStream = new ObjectOutputStream(socket.getOutputStream());
+				inputStream = new ObjectInputStream(socket.getInputStream());
+
 			} catch (IOException e) {
 				System.out.println("통신 연결 에러");
 				e.printStackTrace();
 			}
+			this.start();
 		}
 		
 		public void setPlayerIndex(int playerIndex) {
@@ -110,9 +114,10 @@ public class NetworkingManager extends Thread implements GamelogicInterface {
 		public void sendMessage(MessageProtocol msg) {
 			try {
 				outputStream.writeObject(msg);
-				} catch (IOException e) {
-					e.printStackTrace();
-				}
+				System.out.println("송신:" + msg);
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
 		}
 		
 		@Override
@@ -142,12 +147,16 @@ public class NetworkingManager extends Thread implements GamelogicInterface {
 				MessageProtocol message;
 				try {
 					message = (MessageProtocol)inputStream.readObject();
-				} catch (ClassNotFoundException | IOException e) {
+					System.out.println("메시지 수신함");
+				} catch (ClassNotFoundException e) {
+					e.printStackTrace();
+					continue;
+				} catch (IOException e) {
 					e.printStackTrace();
 					continue;
 				}
-				
-				// TODO: 버퍼 내용에 따른 처리
+
+
 				switch(message.messageType) {
 				case MessageProtocol.MESSAGETYPE_CHATTING:	// 채팅 수신
 					myChatting.receiveMessage(message.getData_String());
@@ -160,6 +169,7 @@ public class NetworkingManager extends Thread implements GamelogicInterface {
 							otherPlayers.get(i).sendMessage(message);
 						}
 					}
+					System.out.println("수신: 채팅");
 					break;
 				case MessageProtocol.MESSAGETYPE_CARDINFO:	// 호스트가 보내온 카드 정보
 					if(isMaster)
@@ -169,9 +179,11 @@ public class NetworkingManager extends Thread implements GamelogicInterface {
 					}
 					int[] cardInfo = message.getData_Int();
 					GuestUI.setCardInfo(cardInfo.length, cardInfo);
+					System.out.println("수신: 카드정보");
 					break;
 				case MessageProtocol.MESSAGETYPE_CARDSELECT:	// 게스트의 카드 선택 동작
 					game.playerCardSelect(playerIndex, message.data[0]);
+					System.out.println("수신: 카드선택");
 					break;
 				}
 			}
@@ -218,13 +230,13 @@ public class NetworkingManager extends Thread implements GamelogicInterface {
 			return false;	// 호스트용 함수
 		
 		try {
-			socket = new ServerSocket(portNum);
+			serverSocket = new ServerSocket(portNum);
 		} catch (IOException e) {
 			return false;
 		}
-		
-		System.out.println("InetAddress:" + socket.getInetAddress());
-		System.out.println("LocalPort:" + socket.getLocalPort());
+
+		System.out.println("InetAddress:" + serverSocket.getInetAddress());
+		System.out.println("LocalPort:" + serverSocket.getLocalPort());
 		this.incoming = true;
 		this.start();
 		return true;
@@ -238,21 +250,25 @@ public class NetworkingManager extends Thread implements GamelogicInterface {
 		while(incoming) {
 			Socket incoming;
 			try {
-				incoming = socket.accept( );
+				incoming = serverSocket.accept();
 			} catch (IOException e) {
 				e.printStackTrace();
 				continue;
 			}
+
 			NetworkPlayer newPlayer = new NetworkPlayer(incoming, otherPlayers.size());
+
 			this.otherPlayers.add(newPlayer);
 			int playerNum = game.addPlayer(newPlayer);
 			newPlayer.setPlayerIndex(playerNum);
 			System.out.println("새로운 참여자: " + playerNum);
+			systemMessageAll("새로운 참여자: " + playerNum);
 		}
 	}
 	
 	public void IncomingThreadEnd() {
 		incoming = false;
+		this.interrupt();
 	}
 	
 	public boolean createConnection(String hostAddress, int portNum) {
@@ -267,6 +283,7 @@ public class NetworkingManager extends Thread implements GamelogicInterface {
 			return false;
 		}
 
+		System.out.println("소켓연결됨");
 		this.otherPlayers.add(new NetworkPlayer(host, 0));
 		
 		return true;
@@ -284,7 +301,7 @@ public class NetworkingManager extends Thread implements GamelogicInterface {
 	}
 
 	@Override
-	public int setupGame(int pairNum, int kindOfPattern) {
+	public int setupGame(int pairNum) {
 		// TODO Auto-generated method stub
 		return 0;
 	}
@@ -302,4 +319,17 @@ public class NetworkingManager extends Thread implements GamelogicInterface {
 		return 0;
 	}
 	
+	public void systemMessageAll(String msg) {
+		sendMessage(msg);
+		this.myChatting.receiveMessage(msg);
+	}
+	
+	public void systemMessageTo(int playerNum, String msg) {
+		if(playerNum == 0)
+			this.myChatting.receiveMessage(msg);
+		else
+			for (NetworkPlayer networkPlayer : otherPlayers)
+				if(networkPlayer.playerIndex == playerNum)
+					networkPlayer.sendMessage(new MessageProtocol(msg));
+	}
 }

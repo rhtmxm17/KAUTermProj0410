@@ -1,20 +1,96 @@
-import javax.swing.JPanel;
+import java.awt.BorderLayout;
+import java.awt.Color;
+import java.awt.Dimension;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import javax.swing.*;
 
 
-// TODO:»ç¿ëÀÚÀÇ ¸Ş¼¼Áö¸¦ ÀÔ·Â¹Ş¾Æ ±× ³»¿ëÀ» NetworkingManager.sendMessage()·Î ´øÁö°í
-//		»ç¿ëÀÚ°¡ ÀÔ·ÂÇÑ ¸Ş¼¼Áö¿Í receiveMessage()·Î µé¾î¿Â ¸Ş¼¼Áö°¡ ÀüºÎ ¿Ã¶ó¿À´Â Ã¤ÆÃ ·Î±×¸¦ ¸¸µç´Ù
+// TODO:ì‚¬ìš©ìì˜ ë©”ì„¸ì§€ë¥¼ ì…ë ¥ë°›ì•„ ê·¸ ë‚´ìš©ì„ NetworkingManager.sendMessage()ë¡œ ë˜ì§€ê³ 
+//		ì‚¬ìš©ìê°€ ì…ë ¥í•œ ë©”ì„¸ì§€ì™€ receiveMessage()ë¡œ ë“¤ì–´ì˜¨ ë©”ì„¸ì§€ê°€ ì „ë¶€ ì˜¬ë¼ì˜¤ëŠ” ì±„íŒ… ë¡œê·¸ë¥¼ ë§Œë“ ë‹¤
 
 public class ChattingUI extends JPanel {
 	private NetworkingManager network = null;
 	
+	private JTextField textField;
+	private JTextArea textArea;
+	private JLabel lblStatus;
+	
+	public ChattingUI() {
+		this.setLayout(new BorderLayout());
+		this.setPreferredSize(new Dimension(360,600));
+		
+		textArea = new JTextArea();
+		textArea.setEditable(false);
+		textArea.setBackground(Color.LIGHT_GRAY);
+		this.add(textArea, BorderLayout.CENTER);
+		
+		JPanel inputField = new JPanel();
+		{
+			inputField.setLayout(new BorderLayout());
+			inputField.setPreferredSize(new Dimension(360,30));
+			
+			textField = new JTextField();
+			textField.setPreferredSize(new Dimension(300,30));
+			//textField.setBounds(0, 230, 390, 31);
+			inputField.add(textField, BorderLayout.CENTER);
+			textField.setColumns(10);
+			
+			JButton btnInput = new JButton("ì…ë ¥");
+			btnInput.setPreferredSize(new Dimension(60,30));
+			btnInput.setForeground(Color.BLUE);
+			//btnInput.setBounds(387, 230, 97, 31);
+			inputField.add(btnInput, BorderLayout.EAST);
+			
+			
+			ActionListener sendMessageAction = new ActionListener() {
+				@Override
+				public void actionPerformed(ActionEvent e) {
+					sendMessage();	
+				}
+			};
+			
+			textField.addActionListener(sendMessageAction);
+			btnInput.addActionListener(sendMessageAction);
+		}
+		this.add(inputField, BorderLayout.SOUTH);
+		
+		
+		JScrollPane scrollPane = new JScrollPane();
+		//scrollPane.setBounds(0, 23, 484, 208);
+		this.add(scrollPane);
+		scrollPane.setViewportView(textArea);
+		
+		
+		//lblStatus = new JLabel("Welcome to KAU Game Chatting Room");
+		//lblStatus.setForeground(Color.BLACK);
+		//panel.add(lblStatus);
+		
+		
+	}
+	
+	protected void sendMessage() {
+		String text = textField.getText();
+		textArea.append(text + "\n");
+		//ì´ˆê¸°í™” ë° ì»¤ì„œìš”ì²­
+		textField.setText("");
+		textField.requestFocus();
+
+		if(network != null)
+			network.sendMessage(text);
+		else
+			System.out.println("ë©”ì„¸ì§€ ì†¡ì‹  í…ŒìŠ¤íŠ¸: " + text);
+	}
+
 	public void setNetworking(NetworkingManager manager) {
 		this.network = manager;
 	}
 	
-	/*
-	 * ¿ÜºÎ¿¡¼­ ¹ŞÀº ¸Ş¼¼ÁöÀÇ ³»¿ëÀÌ ÀÌ ÇÔ¼öÀÇ ÀÎÀÚ¸¦ ÅëÇØ Àü´ŞµÉ ¿¹Á¤
+	/**
+	 * ì™¸ë¶€ì—ì„œ ë°›ì€ ë©”ì„¸ì§€ì˜ ë‚´ìš©ì´ ì´ í•¨ìˆ˜ì˜ ì¸ìë¥¼ í†µí•´ ì „ë‹¬ë  ì˜ˆì •
 	 * */
 	public void receiveMessage(String message) {
 		
+		textArea.append(message + "\n");
 	}
 }
